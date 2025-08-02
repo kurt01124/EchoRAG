@@ -474,36 +474,33 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-## 👨‍💻 제작자 및 팀
+## 제작자 및 팀
 
 **주요 개발자**:
 - **조이현 (JoyHyun Cho)** - 프로젝트 리더 & 백엔드 아키텍트
   - GitHub: [@kurt01124](https://github.com/kurt01124)
   - Email: kurtz01124@gmail.com
-  - LinkedIn: [조이현](https://linkedin.com/in/joyhyun-cho)
 
 **특별 감사**:
 - **Kakao Corp** - KANANA 모델 제공
 - **OpenAI** - GPT API 지원
 - **Chroma** - 벡터 DB 기술
-- **커뮤니티 기여자** - 50+ 개발자들의 피드백과 기여
 
 ---
 
 ## 지원 및 문의
 
 ### **기술 지원**
-- 📧 **이메일**: kurtz01124@gmail.com
-- 💬 **Discord**: [EchoRAG 커뮤니티](https://discord.gg/echorag)
-- 📋 **GitHub Issues**: [이슈 트래커](https://github.com/your-username/EchoRAG/issues)
+- **이메일**: kurtz01124@gmail.com
+- GitHub Issues**: [이슈 트래커](https://github.com/your-username/EchoRAG/issues)
 
 ---
 
 **이 프로젝트가 도움이 되셨다면 Star를 눌러주세요!**
 
-![GitHub stars](https://img.shields.io/github/stars/your-username/EchoRAG?style=social)
-![GitHub forks](https://img.shields.io/github/forks/your-username/EchoRAG?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/your-username/EchoRAG?style=social)
+![GitHub stars](https://img.shields.io/github/stars/kurt01124/EchoRAG?style=social)
+![GitHub forks](https://img.shields.io/github/forks/kurt01124/EchoRAG?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/kurt01124/EchoRAG?style=social)
 
 ---
 
@@ -513,6 +510,6 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 *"미래의 AI는 사용할수록 똑똑해집니다"*
 
-[🚀 지금 시작하기](https://github.com/your-username/EchoRAG) | [📖 문서 보기](https://docs.echorag.ai) | [💬 커뮤니티 참여](https://discord.gg/echorag)
+[지금 시작하기](https://github.com/your-username/EchoRAG) | [문서 보기](https://docs.echorag.ai) | [커뮤니티 참여](https://discord.gg/echorag)
 
 </div>
