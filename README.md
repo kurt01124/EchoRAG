@@ -1,7 +1,6 @@
 # 🧠 EchoRAG: 의미를 기억하고 되돌리는 한국어 특화 RAG 시스템
 
-<div align="center">
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)
 ![KANANA](https://img.shields.io/badge/KANANA-1.5--2.1B-orange.svg)
 ![GPT](https://img.shields.io/badge/GPT-4o--mini-purple.svg)
@@ -12,8 +11,6 @@
 *단순 검색을 넘어, 저장된 벡터를 의미 단위로 해석하고 원문에 가까운 정보를 되돌려주는 "역벡터화 기반 기억 검색 시스템"*
 
 [🚀 빠른 시작](#-빠른-시작) • [📖 문서](#-api-문서) • [🎯 기능](#-주요-기능) • [🛠️ 개발](#-개발-가이드) • [💡 기여](#-기여)
-
-</div>
 
 ---
 
@@ -390,7 +387,7 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 **조이현 (JoyHyun Cho)**
 
-[![GitHub](https://img.shields.io/badge/GitHub-조이현-black?style=flat-square&logo=github)](https://github.com/kurtz01124)
+[![GitHub](https://img.shields.io/badge/GitHub-조이현-black?style=flat-square&logo=github)](https://github.com/kurt01124)
 [![Email](https://img.shields.io/badge/Email-kurtz01124@gmail.com-red?style=flat-square&logo=gmail)](mailto:kurtz01124@gmail.com)
 
 *"의미를 기억하고, 되살리는 AI 시스템"*
