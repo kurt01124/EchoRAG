@@ -64,6 +64,35 @@
             animation: pulse 2s infinite;
         }
 
+        /* 🆕 관리자 모드 토글 버튼 */
+        .admin-toggle {
+            position: absolute;
+            top: 15px;
+            right: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .admin-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .admin-toggle.active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: rotate(180deg);
+        }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
@@ -265,6 +294,7 @@
             font-size: 0.8rem;
             min-width: 200px;
             z-index: 1000;
+            transition: all 0.3s ease;
         }
 
         .stats-title {
@@ -278,6 +308,99 @@
             justify-content: space-between;
             margin: 5px 0;
             color: #666;
+        }
+
+        /* 🆕 MLOps 패널 스타일 */
+        .mlops-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            font-size: 0.8rem;
+            min-width: 220px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateX(100%);
+            pointer-events: none;
+        }
+
+        .mlops-panel.visible {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: all;
+        }
+
+        .mlops-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mlops-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            color: #666;
+            align-items: center;
+        }
+
+        /* 🆕 상태 배지 스타일 */
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-badge.waiting {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-badge.training {
+            background: #fff3e0;
+            color: #f57c00;
+            animation: pulse-badge 2s infinite;
+        }
+
+        .status-badge.queued {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .status-badge.completed {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+            transition: width 0.3s ease;
         }
 
         .error-message {
@@ -322,6 +445,15 @@
             background: #a8a8a8;
         }
 
+        /* 🆕 확장된 통계 패널 */
+        .stats-panel.expanded {
+            min-width: 250px;
+        }
+
+        .stats-panel.expanded .stats-item {
+            margin: 8px 0;
+        }
+
         /* 반응형 디자인 */
         @media (max-width: 768px) {
             .chat-container {
@@ -336,6 +468,18 @@
                 order: -1;
             }
 
+            .mlops-panel {
+                position: relative;
+                margin: 10px 20px;
+                transform: none;
+                opacity: 1;
+                pointer-events: all;
+            }
+
+            .mlops-panel.visible {
+                transform: none;
+            }
+
             .message {
                 max-width: 90%;
             }
@@ -347,6 +491,14 @@
             .chat-title {
                 font-size: 1.3rem;
             }
+
+            .admin-toggle {
+                top: 10px;
+                right: 45px;
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -355,6 +507,12 @@
         <!-- 헤더 -->
         <div class="chat-header">
             <div class="status-indicator" id="statusIndicator"></div>
+            
+            <!-- 🆕 관리자 모드 토글 버튼 -->
+            <button class="admin-toggle" id="adminToggle" title="관리자 정보 토글">
+                <i class="fas fa-cog"></i>
+            </button>
+            
             <h1 class="chat-title">RAG Chat AI</h1>
             <p class="chat-subtitle">Kanana 기반 지능형 대화 시스템</p>
         </div>
@@ -395,7 +553,7 @@
         </div>
     </div>
 
-    <!-- 통계 패널 -->
+    <!-- 기본 통계 패널 -->
     <div class="stats-panel" id="statsPanel">
         <div class="stats-title">📊 시스템 상태</div>
         <div class="stats-item">
@@ -417,6 +575,53 @@
         <div class="stats-item">
             <span>평균 응답:</span>
             <span id="avgResponse">-</span>
+        </div>
+    </div>
+
+    <!-- 🆕 MLOps 관리자 패널 (기본적으로 숨김) -->
+    <div class="mlops-panel" id="mlopsPanel">
+        <div class="mlops-title">
+            <i class="fas fa-robot"></i>
+            MLOps 상태
+        </div>
+        
+        <div class="mlops-item">
+            <span>수집된 대화:</span>
+            <span id="totalCollected">0개</span>
+        </div>
+        
+        <div class="mlops-item">
+            <span>신규 데이터:</span>
+            <span id="newDataCount">0개</span>
+        </div>
+        
+        <div class="mlops-item">
+            <span>학습 진행률:</span>
+            <span id="trainingProgress">0%</span>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        
+        <div class="mlops-item">
+            <span>학습 상태:</span>
+            <span class="status-badge waiting" id="trainingStatus">대기</span>
+        </div>
+        
+        <div class="mlops-item">
+            <span>모델 버전:</span>
+            <span id="modelVersion">-</span>
+        </div>
+        
+        <div class="mlops-item">
+            <span>배치 크기:</span>
+            <span id="batchSize">50개</span>
+        </div>
+        
+        <div class="mlops-item">
+            <span>다음 학습까지:</span>
+            <span id="pendingCount">-</span>
         </div>
     </div>
 

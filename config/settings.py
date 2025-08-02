@@ -10,7 +10,7 @@ env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 class Settings(BaseSettings):
-    """애플리케이션 설정 클래스"""
+    """애플리케이션 설정 클래스 (MLOps 확장)"""
     
     # === API 설정 ===
     openai_api_key: str = Field(..., env="OPENAI_API_KEY")
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
         env="KANANA_FINETUNED_PATH"
     )
     device: str = Field(default="auto", env="DEVICE")  # auto, cuda, cpu
-    dtype: str = Field(default="bfloat16", env="MODEL_DTYPE")  # 이름 변경
+    dtype: str = Field(default="bfloat16", env="MODEL_DTYPE")
     
     # === 데이터베이스 설정 ===
     chroma_data_path: str = Field(default="./data/chroma_data", env="CHROMA_DATA_PATH")
@@ -65,15 +65,63 @@ class Settings(BaseSettings):
     
     # === 성능 설정 ===
     max_concurrent_requests: int = Field(default=10, env="MAX_CONCURRENT_REQUESTS")
-    request_timeout: int = Field(default=300, env="REQUEST_TIMEOUT")  # 초
+    request_timeout: int = Field(default=300, env="REQUEST_TIMEOUT")
+    
+    # ================================
+    # 🚀 새로운 MLOps 파인튜닝 설정
+    # ================================
+    
+    # === 파인튜닝 자동화 설정 ===
+    finetune_enabled: bool = Field(default=True, env="FINETUNE_ENABLED")
+    finetune_batch_size: int = Field(default=50, env="FINETUNE_BATCH_SIZE")  # 몇 개 대화 쌓이면 학습
+    finetune_auto_trigger: bool = Field(default=True, env="FINETUNE_AUTO_TRIGGER")  # 자동 트리거 여부
+    
+    # === 파인튜닝 데이터 경로 ===
+    finetune_data_path: str = Field(default="./data/finetune", env="FINETUNE_DATA_PATH")
+    finetune_conversations_file: str = Field(
+        default="conversations.jsonl", 
+        env="FINETUNE_CONVERSATIONS_FILE"
+    )  # 대화 데이터 파일명
+    finetune_dataset_file: str = Field(
+        default="training_dataset.json", 
+        env="FINETUNE_DATASET_FILE"
+    )  # 생성된 학습 데이터셋
+    
+    # === 파인튜닝 모델 관리 ===
+    finetune_models_path: str = Field(default="./models", env="FINETUNE_MODELS_PATH")
+    finetune_backup_count: int = Field(default=3, env="FINETUNE_BACKUP_COUNT")  # 백업 보관 개수
+    finetune_version_prefix: str = Field(default="v", env="FINETUNE_VERSION_PREFIX")  # 버전 접두사
+    
+    # === 파인튜닝 하이퍼파라미터 ===
+    finetune_epochs: int = Field(default=2, env="FINETUNE_EPOCHS")
+    finetune_learning_rate: float = Field(default=1e-4, env="FINETUNE_LEARNING_RATE")
+    finetune_lora_r: int = Field(default=16, env="FINETUNE_LORA_R")
+    finetune_lora_alpha: int = Field(default=32, env="FINETUNE_LORA_ALPHA")
+    finetune_lora_dropout: float = Field(default=0.1, env="FINETUNE_LORA_DROPOUT")
+    
+    # === 대화 수집 설정 ===
+    conversation_collection_enabled: bool = Field(
+        default=True, 
+        env="CONVERSATION_COLLECTION_ENABLED"
+    )
+    conversation_min_length: int = Field(default=5, env="CONVERSATION_MIN_LENGTH")  # 최소 문자 수
+    conversation_max_length: int = Field(default=2000, env="CONVERSATION_MAX_LENGTH")  # 최대 문자 수
+    conversation_filter_system: bool = Field(
+        default=True, 
+        env="CONVERSATION_FILTER_SYSTEM"
+    )  # 시스템 메시지 필터링
+    
+    # === 모니터링 설정 ===
+    finetune_monitoring_enabled: bool = Field(default=True, env="FINETUNE_MONITORING_ENABLED")
+    finetune_webhook_url: Optional[str] = Field(default=None, env="FINETUNE_WEBHOOK_URL")  # 슬랙/디스코드 웹훅
     
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "case_sensitive": False,
-        "protected_namespaces": ('settings_',),  # Pydantic 충돌 해결
+        "protected_namespaces": ('settings_',),
         "env_nested_delimiter": "__",
-        "extra": "ignore"  # 추가 필드 무시
+        "extra": "ignore"
     }
     
     def __init__(self, **kwargs):
@@ -92,12 +140,24 @@ class Settings(BaseSettings):
         
         if self.memory_max_count <= 0:
             raise ValueError("MEMORY_MAX_COUNT는 0보다 커야 합니다.")
+        
+        # 🚀 MLOps 설정 검증
+        if self.finetune_batch_size <= 0:
+            raise ValueError("FINETUNE_BATCH_SIZE는 0보다 커야 합니다.")
+        
+        if self.finetune_backup_count < 0:
+            raise ValueError("FINETUNE_BACKUP_COUNT는 0 이상이어야 합니다.")
+        
+        if self.conversation_min_length >= self.conversation_max_length:
+            raise ValueError("CONVERSATION_MIN_LENGTH는 MAX_LENGTH보다 작아야 합니다.")
     
     def _create_directories(self):
         """필요한 디렉터리 생성"""
         directories = [
             self.chroma_data_path,
             self.memory_save_path,
+            self.finetune_data_path,  # 🚀 파인튜닝 데이터 경로
+            self.finetune_models_path,  # 🚀 모델 저장 경로
             os.path.dirname(self.log_file_path) if self.log_file_path else None
         ]
         
@@ -130,8 +190,49 @@ class Settings(BaseSettings):
             "max_tokens": self.openai_max_tokens
         }
     
+    # 🚀 새로운 MLOps 설정 메서드들
+    def get_finetune_config(self) -> dict:
+        """파인튜닝 설정 딕셔너리 반환"""
+        return {
+            "enabled": self.finetune_enabled,
+            "batch_size": self.finetune_batch_size,
+            "auto_trigger": self.finetune_auto_trigger,
+            "data_path": self.finetune_data_path,
+            "conversations_file": self.finetune_conversations_file,
+            "dataset_file": self.finetune_dataset_file,
+            "models_path": self.finetune_models_path,
+            "backup_count": self.finetune_backup_count,
+            "version_prefix": self.finetune_version_prefix,
+            "hyperparameters": {
+                "epochs": self.finetune_epochs,
+                "learning_rate": self.finetune_learning_rate,
+                "lora_r": self.finetune_lora_r,
+                "lora_alpha": self.finetune_lora_alpha,
+                "lora_dropout": self.finetune_lora_dropout
+            }
+        }
+    
+    def get_conversation_config(self) -> dict:
+        """대화 수집 설정 딕셔너리 반환"""
+        return {
+            "enabled": self.conversation_collection_enabled,
+            "min_length": self.conversation_min_length,
+            "max_length": self.conversation_max_length,
+            "filter_system": self.conversation_filter_system,
+            "data_path": self.finetune_data_path,
+            "file_name": self.finetune_conversations_file
+        }
+    
+    def get_full_conversation_path(self) -> str:
+        """대화 데이터 전체 경로 반환"""
+        return os.path.join(self.finetune_data_path, self.finetune_conversations_file)
+    
+    def get_full_dataset_path(self) -> str:
+        """학습 데이터셋 전체 경로 반환"""
+        return os.path.join(self.finetune_data_path, self.finetune_dataset_file)
+    
     def print_settings_summary(self):
-        """설정 요약 출력"""
+        """설정 요약 출력 (MLOps 포함)"""
         print("\n🔧 === 시스템 설정 ===")
         print(f"🌐 서버: {self.host}:{self.port}")
         print(f"🤖 모델: {self.kanana_model_name}")
@@ -141,17 +242,27 @@ class Settings(BaseSettings):
         print(f"🔍 검색: 기본 {self.search_default_results}개 결과")
         print(f"📝 로그: {self.log_level} → {self.log_file_path}")
         print(f"🌍 CORS: {', '.join(self.allowed_origins)}")
-        print("🔧 ====================\n")
+        
+        # 🚀 MLOps 설정 요약
+        print("\n🚀 === MLOps 설정 ===")
+        print(f"🤖 파인튜닝: {'활성화' if self.finetune_enabled else '비활성화'}")
+        print(f"📊 배치 크기: {self.finetune_batch_size}개 대화")
+        print(f"⚡ 자동 트리거: {'ON' if self.finetune_auto_trigger else 'OFF'}")
+        print(f"📁 데이터 경로: {self.finetune_data_path}")
+        print(f"💾 모델 백업: {self.finetune_backup_count}개 보관")
+        print(f"📈 대화 수집: {'활성화' if self.conversation_collection_enabled else '비활성화'}")
+        print(f"📏 대화 길이: {self.conversation_min_length}~{self.conversation_max_length}자")
+        print("🚀 ====================\n")
 
 # 전역 설정 인스턴스
 settings = Settings()
 
 # 설정 로드 확인 함수
 def check_environment():
-    """환경 설정 상태 확인"""
+    """환경 설정 상태 확인 (MLOps 포함)"""
     issues = []
     
-    # API 키 확인
+    # 기존 검증
     if not settings.openai_api_key:
         issues.append("❌ OPENAI_API_KEY가 설정되지 않았습니다.")
     else:
@@ -161,8 +272,15 @@ def check_environment():
     if settings.kanana_finetuned_path and not Path(settings.kanana_finetuned_path).exists():
         issues.append(f"⚠️ 파인튜닝 모델 경로를 찾을 수 없습니다: {settings.kanana_finetuned_path}")
     
-    # 디렉터리 권한 확인
-    for path in [settings.chroma_data_path, settings.memory_save_path]:
+    # 🚀 MLOps 디렉터리 권한 확인
+    mlops_paths = [
+        settings.chroma_data_path,
+        settings.memory_save_path,
+        settings.finetune_data_path,
+        settings.finetune_models_path
+    ]
+    
+    for path in mlops_paths:
         try:
             Path(path).mkdir(parents=True, exist_ok=True)
             test_file = Path(path) / "test_write"
@@ -170,6 +288,18 @@ def check_environment():
             test_file.unlink()
         except Exception as e:
             issues.append(f"❌ 디렉터리 쓰기 권한 없음: {path} ({e})")
+    
+    # 🚀 파인튜닝 설정 검증
+    if settings.finetune_enabled:
+        print("✅ 파인튜닝 자동화 활성화됨")
+        if settings.finetune_auto_trigger:
+            print(f"✅ 자동 트리거: {settings.finetune_batch_size}개 대화마다 실행")
+        else:
+            print("⚠️ 자동 트리거 비활성화됨 (수동 실행 필요)")
+    
+    if settings.conversation_collection_enabled:
+        print("✅ 대화 수집 활성화됨")
+        print(f"📏 수집 조건: {settings.conversation_min_length}~{settings.conversation_max_length}자")
     
     if issues:
         print("\n🚨 === 환경 설정 문제 ===")
